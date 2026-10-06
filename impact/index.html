@@ -284,7 +284,9 @@ function dueHours(t){
 function priorityFor(a,h){if(/stat|urgent|hold|stop|culture/i.test(a)||h<=24)return"High";if(h<=72)return"Medium";return"Routine";}
 function dueDate(h){return new Date(Date.now()+h*3600e3).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 function parse(text){
-  const facility=(text.match(/^\s*([A-Z][\w'’ ]+?(?:Grove|Ridge|Hill|Manor|Gardens|Care|Center|Home|Village|Park|Pointe|House))\b/)||[])[1]||"Facility from visit context";
+  const ADDR={"Maple Grove":"Maple Grove Care Center · 1420 N Maple St, Wichita, KS 67203"};
+  const facName=(text.match(/^\s*([A-Z][\w'’ ]+?(?:Grove|Ridge|Hill|Manor|Gardens|Care|Center|Home|Village|Park|Pointe|House))\b/)||[])[1]||"Facility from visit context";
+  const facility=ADDR[facName]||facName;
   let room="—",patient="Patient from visit context";const tasks=[];
   const clauses=text.replace(/\s+/g,' ').split(/(?<!\b(?:Mrs|Mr|Ms|Dr|Rm|St))\.\s+|;\s+|\s+also\s+/i).map(s=>s.trim()).filter(Boolean);
   for(const c of clauses){
