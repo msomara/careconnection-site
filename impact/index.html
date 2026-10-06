@@ -65,15 +65,7 @@ button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 16p
 .step.now{background:var(--blue2);color:var(--blue);border-color:#cfdcff}
 .tact{display:flex;gap:8px;padding:0 16px 14px;align-items:center;flex-wrap:wrap}
 .log{font-size:12px;color:var(--muted);padding:0 16px 14px}
-.notes{display:flex;flex-direction:column;gap:6px;padding:0 16px 16px}
-.note,.toast{display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#f8fafc}
-.ni{font-size:16px;line-height:1.2}.nh{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
-.n-out{background:var(--blue2);border-color:#cfdcff}.n-in{background:var(--green2);border-color:#bfe5cc}
-.n-warn{background:#fff7e6;border-color:#f6d9a6}.n-done{background:#e6f6f6;border-color:#a7dcdc}.n-sys{background:#f3f0ff;border-color:#ddd3ff}
-#toasts{position:fixed;right:16px;bottom:16px;z-index:50;display:flex;flex-direction:column;gap:8px;width:340px;pointer-events:none}
-.toast{box-shadow:0 8px 24px rgba(16,35,63,.18);animation:tin .25s ease-out;transition:opacity .4s,transform .4s}
-.toast.out{opacity:0;transform:translateX(20px)}
-@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.dash td{vertical-align:middle;font-size:14px}.dash .btn{padding:8px 18px}
 pre.json{background:#0b1f3a;color:#d6f5f5;border-radius:12px;padding:14px;font-size:12.5px;overflow:auto;max-height:340px;margin:0}
 .steps9{display:grid;grid-template-columns:repeat(9,1fr);gap:8px}
 .s9{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:13px;min-height:118px}
@@ -191,13 +183,11 @@ input[type=range]{width:100%;accent-color:var(--teal)}
       <div class="hint" style="margin-top:8px">Demo mode: this page runs a local parser that returns the same JSON schema GPT-4o mini is prompted to produce. Nothing you type leaves your browser. Names are fictional.</div>
     </div>
   </div>
-  <div class="tact" id="autobar" style="display:none;padding:14px 0 0">
-    <button class="btn" id="runall">▶ Send all notifications</button>
-    <button class="btn ghost" id="resetall">↺ Reset</button>
+  <div class="tact" id="autobar" style="display:none;padding:18px 0 0;justify-content:space-between">
+    <h3 style="margin:0;font-size:18px">Tasks dashboard</h3>
     <span class="hint" id="autostat"></span>
   </div>
   <div class="tasks" id="tasks"></div>
-  <div id="toasts"></div>
 </section>
 
 <section id="loop">
@@ -300,7 +290,7 @@ const EX=[
  "Oak Hill, room 12, Ms. Lee: urine culture by tomorrow. Room 40, Mr. Brooks: weekly weights and notify if gain over 3 lbs. Room 77, Mrs. Diaz: schedule cardiology follow-up within 2 weeks."
 ];
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{$('note').value=EX[+c.dataset.ex];$('go').click();});
-$('clr').onclick=()=>{$('note').value='';runId++;state=[];render();$('speed').style.display='none';$('json').textContent='// Click "Create tasks with AI"';};
+$('clr').onclick=()=>{$('note').value='';state=[];render();$('speed').style.display='none';$('json').textContent='// Click "Create tasks with AI"';};
 
 const OWNERS={RN:["Sarah Miller, RN","Grace Kim, RN","Daniel Ortiz, RN"],LPN:["Maria Lopez, LPN","Tom Reed, LPN"],PT:["Alex Chen, PT"],"Unit clerk":["Priya Shah, Unit Clerk"]};
 function roleFor(a){
@@ -339,77 +329,29 @@ function parse(text){
   }
   return tasks;
 }
-const STEPS=["Sent to facility","Accepted by facility","Owner assigned","Completed","Confirmation recorded","Closed ✓"];
 let state=[];
 function render(){
-  $('tasks').innerHTML=state.map((t,i)=>{
-    const s=t.stage,badge=s>=5?'b-done':s>=2?'b-own':s>=1?'b-acc':'b-open';
-    return `<div class="task"><div class="th"><b>${t.action}</b><span class="badge ${badge}">${STEPS[s]}</span></div>
-    <div class="fields">
-      <div class="f"><div class="k">Patient</div><div class="val">${t.patient} · Room ${t.room}</div></div>
-      <div class="f"><div class="k">Facility</div><div class="val">${t.facility}</div></div>
-      <div class="f"><div class="k">Owner</div><div class="val">${s>=2?t.suggested_owner:'<span class="hint">Pending acceptance ('+t.owner_role+')</span>'}</div></div>
-      <div class="f"><div class="k">Due · Priority</div><div class="val">${t.due} · ${t.priority}</div></div>
-    </div>
-    <div class="loop">${STEPS.map((x,j)=>`<div class="step ${j<s||s===5?'on':j===s?'now':''}">${x}</div>`).join('')}</div>
-    <div class="tact"><button class="btn" data-i="${i}" ${s>=5||t.running?'disabled':''}>${s>=5?'Loop closed ✓':t.running?'Notifications in progress…':'▶ Send notifications'}</button><span class="hint">Each step is triggered by a notification — staff respond from their phone. No calls, faxes or chasing.</span></div>
-    <div class="notes">${t.notes.map(n=>`<div class="note n-${n.kind}"><span class="ni">${n.icon}</span><div><div class="nh">${n.ch} · ${n.time}</div><div>${n.text}</div></div></div>`).join('')}</div></div>`;
-  }).join('');
-  document.querySelectorAll('#tasks .tact .btn').forEach(b=>b.onclick=()=>autoClose(+b.dataset.i));
-  const done=state.filter(t=>t.stage>=5).length,sent=state.reduce((a,t)=>a+t.notes.length,0);
-  $('autobar').style.display=state.length?'flex':'none';
-  $('autostat').textContent=`${done} of ${state.length} loops closed · ${sent} notifications sent · 0 phone calls`;
-  $('runall').disabled=done===state.length||state.some(t=>t.running);
+  if(!state.length){$('tasks').innerHTML='';$('autobar').style.display='none';return;}
+  const acc=state.filter(t=>t.accepted).length;
+  $('autobar').style.display='flex';
+  $('autostat').textContent=`${acc} of ${state.length} accepted`;
+  $('tasks').innerHTML=`<table class="dash"><thead><tr><th>Task</th><th>Patient</th><th>Facility</th><th>Due · Priority</th><th>Status</th><th>Owner</th><th></th></tr></thead><tbody>${state.map((t,i)=>`<tr>
+    <td><b>${t.action}</b></td>
+    <td>${t.patient} · Rm ${t.room}</td>
+    <td>${t.facility}</td>
+    <td>${t.due} · ${t.priority}</td>
+    <td>${t.accepted?'<span class="badge b-own">Accepted · Owner assigned</span>':'<span class="badge b-open">Sent to facility</span>'}</td>
+    <td>${t.accepted?t.suggested_owner:'<span class="hint">'+t.owner_role+' — assigned on accept</span>'}</td>
+    <td>${t.accepted?'<span class="hint">✓ '+t.acceptedAt+'</span>':`<button class="btn" data-i="${i}">Accept</button>`}</td>
+  </tr>`).join('')}</tbody></table>`;
+  document.querySelectorAll('#tasks .btn').forEach(b=>b.onclick=()=>{const t=state[+b.dataset.i];t.accepted=true;t.acceptedAt=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});render();});
 }
-const nowT=()=>new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
-const CHARGE="Linda Brooks, Charge RN";
-function sentNote(t){return{icon:'📲',kind:'out',ch:'Push + SMS → '+t.facility+' charge nurse',time:nowT(),text:`New order from Dr. T: “${t.action}” — ${t.patient}, Room ${t.room}. Tap to accept.`};}
-function script(t,i){
-  const ev=[];
-  if(i===1)ev.push(
-    {icon:'⏰',kind:'warn',ch:'Auto-reminder (no response in 15 min)',text:`Reminder re-sent to ${t.facility} charge nurse — ${t.priority} priority.`},
-    {icon:'⬆️',kind:'warn',ch:'Auto-escalation → Director of Nursing',text:`Escalated to ${t.facility} DON so the order isn't missed.`});
-  ev.push(
-    {adv:1,icon:'✅',kind:'in',ch:'Response from facility',text:`${CHARGE} tapped <b>Accept</b> in the notification.`},
-    {adv:1,icon:'👤',kind:'out',ch:'Push → '+t.suggested_owner,text:`Auto-assigned to ${t.suggested_owner} (on shift · ${t.owner_role}). Due ${t.due}.`},
-    {adv:1,icon:'✔️',kind:'in',ch:'Response from '+t.suggested_owner,text:`Marked <b>Done</b> from her phone with a completion note.`},
-    {adv:1,icon:'📄',kind:'sys',ch:'CareConnection → chart',text:`Confirmation, note and timestamp recorded in the facility chart.`},
-    {adv:1,icon:'🔔',kind:'done',ch:'Notification → Dr. T',text:`Loop closed: “${t.action}”. No follow-up call needed.`});
-  return ev;
-}
-function toast(n){
-  const d=document.createElement('div');d.className='toast n-'+n.kind;
-  d.innerHTML=`<span class="ni">${n.icon}</span><div><div class="nh">${n.ch}</div><div>${n.text}</div></div>`;
-  $('toasts').prepend(d);setTimeout(()=>d.classList.add('out'),2600);setTimeout(()=>d.remove(),3000);
-  while($('toasts').children.length>4)$('toasts').lastChild.remove();
-}
-let runId=0;
-function autoClose(i){
-  const t=state[i],id=runId;if(!t||t.stage>=5||t.running)return;
-  t.running=true;render();
-  const ev=script(t,i);let k=0;
-  const tick=()=>{
-    if(id!==runId)return;
-    const n={...ev[k++],time:nowT()};
-    if(n.adv)t.stage++;
-    t.notes.push(n);toast(n);
-    if(k>=ev.length)t.running=false;
-    render();
-    if(k<ev.length)setTimeout(tick,900);
-  };
-  setTimeout(tick,900);
-}
-function autoAll(){state.forEach((t,i)=>setTimeout(()=>autoClose(i),i*400));}
-function freshTask(t){return{...t,stage:0,running:false,notes:[sentNote(t)]};}
-$('runall').onclick=autoAll;
-$('resetall').onclick=()=>{runId++;state=state.map(freshTask);render();};
+function freshTask(t){return{...t,accepted:false};}
 $('go').onclick=(e)=>{
   const tasks=parse($('note').value);
-  if(!tasks.length){$('json').textContent='// No actionable instruction found. Try one of the examples.';runId++;state=[];render();$('speed').style.display='none';return;}
+  if(!tasks.length){$('json').textContent='// No actionable instruction found. Try one of the examples.';state=[];render();$('speed').style.display='none';return;}
   $('json').textContent=JSON.stringify({model:"gpt-4o-mini",response_format:"json_schema: care_handoff_tasks",tasks:tasks.map(({due,...r})=>r)},null,2);
-  runId++;state=tasks.map(freshTask);render();speed();
-  if(e&&e.isTrusted){tasks.forEach(t=>toast(sentNote(t)));autoAll();}
-  else{const io=new IntersectionObserver(x=>{if(x[0].isIntersecting){io.disconnect();autoAll();}},{threshold:.3});io.observe($('tasks'));}
+  state=tasks.map(freshTask);render();speed();
 };
 function speed(){
   if(!state.length)return;
