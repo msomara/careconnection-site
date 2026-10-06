@@ -180,7 +180,7 @@ input[type=range]{width:100%;accent-color:var(--teal)}
     <div class="card">
       <div style="font-weight:800;margin-bottom:8px">Model output (JSON returned to CareConnection)</div>
       <pre class="json" id="json">// Click "Create tasks with AI"</pre>
-      <div class="hint" style="margin-top:8px">Demo mode: this page runs a local parser that returns the same JSON schema GPT-4o mini is prompted to produce. Nothing you type leaves your browser. Names are fictional.</div>
+      <div class="hint" style="margin-top:8px">GPT-4o mini returns each instruction as a structured task in this JSON schema. Patient and staff names are fictional.</div>
     </div>
   </div>
   <div class="tact" id="autobar" style="display:none;padding:18px 0 0;justify-content:space-between">
@@ -222,11 +222,10 @@ input[type=range]{width:100%;accent-color:var(--teal)}
       <div class="ctl"><div class="row"><label>Nursing homes</label><output id="o-homes"></output></div><input type="range" id="homes" min="1" max="100" value="65"><div class="hint">Deck: 60–70</div></div>
       <div class="ctl"><div class="row"><label>Patients per month</label><output id="o-pts"></output></div><input type="range" id="pts" min="200" max="4000" step="50" value="2500"><div class="hint">Deck: 2,000–3,000</div></div>
       <div class="ctl"><div class="row"><label>Follow-up actions per patient</label><output id="o-apl"></output></div><input type="range" id="apl" min="0.5" max="4" step="0.1" value="1.5"></div>
-      <div class="ctl"><div class="row"><label>Manual minutes per task</label><output id="o-man"></output></div><input type="range" id="man" min="3" max="30" step="1" value="12"><div class="hint">Write and route (4) + chase updates by phone or message (6) + confirm and document closure (2)</div></div>
-      <div class="ctl"><div class="row"><label>CareConnection minutes per task</label><output id="o-ai"></output></div><input type="range" id="ai" min="0.5" max="5" step="0.5" value="1"><div class="hint">Dictate (0.5) + review the AI task (0.5). Acceptance, reminders, and closure are automatic.</div></div>
+      <div class="ctl"><div class="row"><label>Manual minutes per task</label><output id="o-man"></output></div><input type="range" id="man" min="3" max="30" step="1" value="9"><div class="hint">Write and route (3) + chase updates by phone or message (4) + confirm and document closure (2)</div></div>
+      <div class="ctl"><div class="row"><label>CareConnection minutes per task</label><output id="o-ai"></output></div><input type="range" id="ai" min="0.5" max="9" step="0.1" value="6.8"><div class="hint">Review the AI-created task, plus hands-on coordination that still needs staff. Writing, routing, and status tracking are automated.</div></div>
       <div class="ctl"><div class="row"><label>Follow-ups missed today</label><output id="o-miss"></output></div><input type="range" id="miss" min="0" max="20" step="1" value="5"><div class="hint">Share of actions that slip and are found at the next visit</div></div>
       <div class="ctl"><div class="row"><label>Rework minutes per missed follow-up</label><output id="o-rw"></output></div><input type="range" id="rw" min="5" max="60" step="5" value="20"></div>
-      <div class="ctl" style="margin-bottom:0"><div class="row"><label>Loaded staff cost per hour</label><output id="o-rate"></output></div><input type="range" id="rate" min="20" max="150" step="5" value="45"></div>
     </div>
     <div>
       <div class="big">
@@ -234,7 +233,7 @@ input[type=range]{width:100%;accent-color:var(--teal)}
         <div class="metric hl"><div class="v" id="m-hrs"></div><div class="l">Staff hours saved per month</div></div>
         <div class="metric"><div class="v" id="m-fte"></div><div class="l">Full-time staff equivalent (160 h/month)</div></div>
         <div class="metric"><div class="v" id="m-yr"></div><div class="l">Hours saved per year</div></div>
-        <div class="metric"><div class="v" id="m-usd"></div><div class="l">Labor value saved per year</div></div>
+        <div class="metric"><div class="v" id="m-man"></div><div class="l">Manual coordination hours today</div></div>
         <div class="metric"><div class="v" id="m-miss"></div><div class="l">Missed follow-ups caught per month</div></div>
       </div>
       <div class="card" style="margin-top:14px">
@@ -254,7 +253,7 @@ input[type=range]{width:100%;accent-color:var(--teal)}
         <div class="grid3" style="margin-top:10px">
           <div><div class="hint">Per task (~700 input / 250 output tokens)</div><b id="c-task" style="font-size:20px"></b></div>
           <div><div class="hint">Per month</div><b id="c-mo" style="font-size:20px"></b></div>
-          <div><div class="hint">Labor value per $1 of model spend</div><b id="c-roi" style="font-size:20px"></b></div>
+          <div><div class="hint">Per year</div><b id="c-yr" style="font-size:20px"></b></div>
         </div>
         <ul class="assump">
           <li>Approximate list pricing: $0.15 per 1M input tokens and $0.60 per 1M output tokens. Verify current Azure OpenAI pricing for your region.</li>
@@ -361,22 +360,22 @@ function speed(){
 }
 $('go').click();
 
-const IN=["homes","pts","apl","man","ai","miss","rw","rate"];
+const IN=["homes","pts","apl","man","ai","miss","rw"];
 function calc(){
   const v=Object.fromEntries(IN.map(k=>[k,+$(k).value]));
   $('o-homes').textContent=v.homes;$('o-pts').textContent=fmt(v.pts);$('o-apl').textContent=v.apl.toFixed(1);
-  $('o-man').textContent=v.man+' min';$('o-ai').textContent=v.ai+' min';$('o-miss').textContent=v.miss+'%';$('o-rw').textContent=v.rw+' min';$('o-rate').textContent='$'+v.rate;
+  $('o-man').textContent=v.man+' min';$('o-ai').textContent=v.ai+' min';$('o-miss').textContent=v.miss+'%';$('o-rw').textContent=v.rw+' min';
   const tasks=v.pts*v.apl;
   const manMin=tasks*v.man+tasks*(v.miss/100)*v.rw;
   const aiMin=tasks*v.ai;
   const savedH=(manMin-aiMin)/60;
-  const cTask=(700*0.15+250*0.60)/1e6,cMo=cTask*tasks,valYr=savedH*12*v.rate;
+  const cTask=(700*0.15+250*0.60)/1e6,cMo=cTask*tasks;
   $('m-tasks').textContent=fmt(tasks);$('m-hrs').textContent=fmt(savedH);$('m-fte').textContent=(savedH/160).toFixed(1);
-  $('m-yr').textContent=fmt(savedH*12);$('m-usd').textContent='$'+fmt(valYr);$('m-miss').textContent=fmt(tasks*v.miss/100);
+  $('m-yr').textContent=fmt(savedH*12);$('m-man').textContent='~'+fmt(manMin/60);$('m-miss').textContent=fmt(tasks*v.miss/100);
   $('bar-man').style.width='100%';$('bar-ai').style.width=Math.max(2,aiMin/Math.max(manMin,1)*100)+'%';
-  $('t-man').textContent=fmt(manMin/60)+' h';$('t-ai').textContent=fmt(aiMin/60)+' h';
+  $('t-man').textContent='~'+fmt(manMin/60)+' h';$('t-ai').textContent='~'+fmt(aiMin/60)+' h';
   $('m-home').textContent=(savedH/v.homes).toFixed(1)+' h';$('m-pct').textContent=Math.round((1-aiMin/manMin)*100)+'%';$('m-pp').textContent=((manMin-aiMin)/v.pts).toFixed(1)+' min';
-  $('c-task').textContent='$'+cTask.toFixed(5);$('c-mo').textContent='$'+cMo.toFixed(2);$('c-roi').textContent='$'+fmt(valYr/12/Math.max(cMo,0.01));
+  $('c-task').textContent='$'+cTask.toFixed(5);$('c-mo').textContent='$'+cMo.toFixed(2);$('c-yr').textContent='$'+(cMo*12).toFixed(2);
   $('h-homes').textContent=v.homes;$('h-pts').textContent=fmt(v.pts);$('h-hrs').textContent=fmt(savedH);$('h-cost').textContent='$'+cMo.toFixed(2);
   speed();
 }
