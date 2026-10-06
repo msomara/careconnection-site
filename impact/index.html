@@ -182,6 +182,11 @@ input[type=range]{width:100%;accent-color:var(--teal)}
       <div class="hint" style="margin-top:8px">Demo mode: this page runs a local parser that returns the same JSON schema GPT-4o mini is prompted to produce. Nothing you type leaves your browser. Names are fictional.</div>
     </div>
   </div>
+  <div class="tact" id="autobar" style="display:none;padding:14px 0 0">
+    <button class="btn" id="runall">▶ Auto-close all loops</button>
+    <button class="btn ghost" id="resetall">↺ Reset</button>
+    <span class="hint" id="autostat"></span>
+  </div>
   <div class="tasks" id="tasks"></div>
 </section>
 
@@ -285,7 +290,7 @@ const EX=[
  "Oak Hill, room 12, Ms. Lee: urine culture by tomorrow. Room 40, Mr. Brooks: weekly weights and notify if gain over 3 lbs. Room 77, Mrs. Diaz: schedule cardiology follow-up within 2 weeks."
 ];
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{$('note').value=EX[+c.dataset.ex];$('go').click();});
-$('clr').onclick=()=>{$('note').value='';$('tasks').innerHTML='';$('speed').style.display='none';$('json').textContent='// Click "Create tasks with AI"';};
+$('clr').onclick=()=>{$('note').value='';runId++;state=[];render();$('speed').style.display='none';$('json').textContent='// Click "Create tasks with AI"';};
 
 const OWNERS={RN:["Sarah Miller, RN","Grace Kim, RN","Daniel Ortiz, RN"],LPN:["Maria Lopez, LPN","Tom Reed, LPN"],PT:["Alex Chen, PT"],"Unit clerk":["Priya Shah, Unit Clerk"]};
 function roleFor(a){
@@ -337,16 +342,36 @@ function render(){
       <div class="f"><div class="k">Due · Priority</div><div class="val">${t.due} · ${t.priority}</div></div>
     </div>
     <div class="loop">${STEPS.map((x,j)=>`<div class="step ${j<s||s===5?'on':j===s?'now':''}">${x}</div>`).join('')}</div>
-    <div class="tact"><button class="btn" data-i="${i}" ${s>=5?'disabled':''}>${s>=5?'Loop closed':'Next: '+STEPS[s+1]}</button><span class="hint">Simulates the facility side of the loop.</span></div>
+    <div class="tact"><button class="btn" data-i="${i}" ${s>=5||t.running?'disabled':''}>${s>=5?'Loop closed ✓':t.running?'Closing loop…':'▶ Auto-close this loop'}</button><span class="hint">Facility accepts, assigns, completes and confirms automatically — no manual follow-up.</span></div>
     ${t.log.length?`<div class="log">${t.log.join(' · ')}</div>`:''}</div>`;
   }).join('');
-  document.querySelectorAll('.tact .btn').forEach(b=>b.onclick=()=>{const t=state[+b.dataset.i];if(t.stage<5){t.stage++;t.log.push(new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' '+STEPS[t.stage]);render();}});
+  document.querySelectorAll('#tasks .tact .btn').forEach(b=>b.onclick=()=>autoClose(+b.dataset.i));
+  const done=state.filter(t=>t.stage>=5).length;
+  $('autobar').style.display=state.length?'flex':'none';
+  $('autostat').textContent=`${done} of ${state.length} loops closed automatically · 0 follow-up calls`;
+  $('runall').disabled=done===state.length||state.some(t=>t.running);
 }
+let runId=0;
+function autoClose(i){
+  const t=state[i],id=runId;if(!t||t.stage>=5||t.running)return;
+  t.running=true;render();
+  const tick=()=>{
+    if(id!==runId)return;
+    t.stage++;t.log.push(new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' '+STEPS[t.stage]);
+    if(t.stage>=5)t.running=false;
+    render();
+    if(t.stage<5)setTimeout(tick,450);
+  };
+  setTimeout(tick,450);
+}
+function autoAll(){state.forEach((t,i)=>setTimeout(()=>autoClose(i),i*250));}
+$('runall').onclick=autoAll;
+$('resetall').onclick=()=>{runId++;state.forEach(t=>{t.stage=0;t.log=[];t.running=false;});render();};
 $('go').onclick=()=>{
   const tasks=parse($('note').value);
-  if(!tasks.length){$('json').textContent='// No actionable instruction found. Try one of the examples.';$('tasks').innerHTML='';$('speed').style.display='none';return;}
+  if(!tasks.length){$('json').textContent='// No actionable instruction found. Try one of the examples.';runId++;state=[];render();$('speed').style.display='none';return;}
   $('json').textContent=JSON.stringify({model:"gpt-4o-mini",response_format:"json_schema: care_handoff_tasks",tasks:tasks.map(({due,...r})=>r)},null,2);
-  state=tasks.map(t=>({...t,stage:0,log:[]}));render();speed();
+  runId++;state=tasks.map(t=>({...t,stage:0,log:[]}));render();speed();autoAll();
 };
 function speed(){
   if(!state.length)return;
