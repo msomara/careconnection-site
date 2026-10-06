@@ -122,7 +122,7 @@ input[type=range]{width:100%;accent-color:var(--teal)}
       <div class="kpi"><div class="v" id="h-homes">65</div><div class="l">Nursing homes covered</div></div>
       <div class="kpi"><div class="v" id="h-pts">2,500</div><div class="l">Patients per month</div></div>
       <div class="kpi"><div class="v" id="h-hrs">—</div><div class="l">Staff hours saved per month</div></div>
-      <div class="kpi"><div class="v" id="h-cost">—</div><div class="l">GPT-4o mini cost per month</div></div>
+      <div class="kpi"><div class="v" id="h-cost">—</div><div class="l">Running cost per month (GPT-4o mini)</div></div>
     </div>
   </div>
 </header>
@@ -130,9 +130,8 @@ input[type=range]{width:100%;accent-color:var(--teal)}
 <nav class="tabs"><div class="wrap">
   <a href="#episode">1 · Real care episode</a>
   <a href="#demo">2 · AI task creation</a>
-  <a href="#loop">3 · Closed loop</a>
-  <a href="#model">4 · Operating model</a>
-  <a href="#impact">5 · Time saved at scale</a>
+  <a href="#model">3 · Operating model</a>
+  <a href="#impact">4 · Time saved at scale</a>
 </div></nav>
 
 <main class="wrap">
@@ -190,14 +189,6 @@ input[type=range]{width:100%;accent-color:var(--teal)}
   <div class="tasks" id="tasks"></div>
 </section>
 
-<section id="loop">
-  <div class="eyebrow">Without vs. with CareConnection</div>
-  <h2>The care-team decision becomes accountable work.</h2>
-  <div class="toggle"><button id="tWith" class="act">With CareConnection · closed loop</button><button id="tWo">Without · open loop</button></div>
-  <div class="steps9" id="steps9"></div>
-  <div id="loopMsg" class="ok"></div>
-</section>
-
 <section id="model">
   <div class="eyebrow">Operating model</div>
   <h2>CareConnection turns an instruction into a closed operational circuit.</h2>
@@ -235,28 +226,19 @@ input[type=range]{width:100%;accent-color:var(--teal)}
         <div class="metric"><div class="v" id="m-yr"></div><div class="l">Hours saved per year</div></div>
         <div class="metric"><div class="v" id="m-man"></div><div class="l">Manual coordination hours today</div></div>
         <div class="metric"><div class="v" id="m-miss"></div><div class="l">Missed follow-ups caught per month</div></div>
-      </div>
-      <div class="card" style="margin-top:14px">
-        <div style="font-weight:800">Monthly coordination time</div>
-        <div class="bars">
-          <div class="bar"><span>Manual today</span><div class="t"><i id="bar-man" style="background:#e07a4f"></i></div><b id="t-man"></b></div>
-          <div class="bar"><span>With CareConnection</span><div class="t"><i id="bar-ai" style="background:var(--teal)"></i></div><b id="t-ai"></b></div>
-        </div>
-        <div class="grid3" style="margin-top:14px">
-          <div><div class="hint">Saved per nursing home per month</div><b id="m-home" style="font-size:20px"></b></div>
-          <div><div class="hint">Coordination time reduction</div><b id="m-pct" style="font-size:20px"></b></div>
-          <div><div class="hint">Minutes saved per patient</div><b id="m-pp" style="font-size:20px"></b></div>
-        </div>
+        <div class="metric"><div class="v" id="m-home"></div><div class="l">Saved per nursing home per month</div></div>
+        <div class="metric"><div class="v" id="m-pct"></div><div class="l">Coordination time reduction</div></div>
+        <div class="metric"><div class="v" id="m-pp"></div><div class="l">Minutes saved per patient</div></div>
       </div>
       <div class="card" style="margin-top:14px">
         <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">GPT-4o mini running cost</div><span class="model">Recommended model</span></div>
         <div class="grid3" style="margin-top:10px">
-          <div><div class="hint">Per task (~700 input / 250 output tokens)</div><b id="c-task" style="font-size:20px"></b></div>
+          <div><div class="hint">Per task</div><b id="c-task" style="font-size:20px"></b></div>
           <div><div class="hint">Per month</div><b id="c-mo" style="font-size:20px"></b></div>
           <div><div class="hint">Per year</div><b id="c-yr" style="font-size:20px"></b></div>
         </div>
         <ul class="assump">
-          <li>Approximate list pricing: $0.15 per 1M input tokens and $0.60 per 1M output tokens. Verify current Azure OpenAI pricing for your region.</li>
+          <li>Running cost covers GPT-4o mini calls plus Azure hosting, secure storage, monitoring, and support for the CareConnection service.</li>
           <li>GPT-4o mini fits this job: short structured extraction, JSON-schema output, low latency, and very low cost per call.</li>
           <li>All time figures are editable estimates. Validate them with Dr. T's team through a two-week time study.</li>
         </ul>
@@ -272,24 +254,13 @@ input[type=range]{width:100%;accent-color:var(--teal)}
 const $=id=>document.getElementById(id);
 const fmt=n=>Math.round(n).toLocaleString('en-US');
 
-const WITH=[["Dr. T sees the patient",""],["Team creates the handoff","AI turns dictation into a task: dressing change within 48 hours"],["Handoff goes to the facility",""],["Facility accepts responsibility",""],["A named owner is assigned","Sarah Miller, RN · Due Oct 7"],["Sarah completes the action",""],["Sarah records confirmation",""],["Dr. T's team receives “Completed ✓”",""],["Care episode is closed","Responsibility and completion are visible"]];
-const WO=[["Dr. T treats the patient",""],["Dr. T gives the instruction","Dressing change in 48 hours; send confirmation"],["Dr. T leaves the facility",""],["No named owner","Responsibility remains implicit"],["Staff assumes someone else is handling it",""],["Action is not completed or documented",""],["Dr. T's team does not know",""],["Missed follow-up is found at the next visit",""],["Patient experiences an avoidable delay","Reassessment or repeated treatment may be required"]];
-function drawLoop(w){
-  const d=w?WITH:WO;
-  $('steps9').innerHTML=d.map((s,i)=>`<div class="s9 ${i>=3?(w?'good':'bad'):''}"><div class="n">${i+1}</div><b>${s[0]}</b><span class="hint">${s[1]}</span></div>`).join('');
-  $('loopMsg').className=w?'ok':'warn';
-  $('loopMsg').textContent=w?'Closed loop: responsibility and completion are visible.':'Open loop: the instruction loses operational ownership.';
-  $('tWith').className=w?'act':'';$('tWo').className=w?'':'act';
-}
-$('tWith').onclick=()=>drawLoop(true);$('tWo').onclick=()=>drawLoop(false);drawLoop(true);
-
 const EX=[
  "Maple Grove, room 214, Mrs. Johnson: perform dressing change on left heel wound within 48 hours and send confirmation.",
  "Cedar Ridge, room 305, Mr. Alvarez: hold metformin until kidney function is rechecked; repeat BMP in 3 days. Also start fall-risk precautions today.",
  "Oak Hill, room 12, Ms. Lee: urine culture by tomorrow. Room 40, Mr. Brooks: weekly weights and notify if gain over 3 lbs. Room 77, Mrs. Diaz: schedule cardiology follow-up within 2 weeks."
 ];
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{$('note').value=EX[+c.dataset.ex];$('go').click();});
-$('clr').onclick=()=>{$('note').value='';state=[];render();$('speed').style.display='none';$('json').textContent='// Click "Create tasks with AI"';};
+$('clr').onclick=()=>{$('note').value='';newCount=0;state=seed();render();$('speed').style.display='none';$('json').textContent='// Click "Create tasks with AI"';};
 
 const OWNERS={RN:["Sarah Miller, RN","Grace Kim, RN","Daniel Ortiz, RN"],LPN:["Maria Lopez, LPN","Tom Reed, LPN"],PT:["Alex Chen, PT"],"Unit clerk":["Priya Shah, Unit Clerk"]};
 function roleFor(a){
@@ -328,35 +299,50 @@ function parse(text){
   }
   return tasks;
 }
-let state=[];
+const SEED=[
+ ["Recheck BP twice daily for 3 days; call if SBP over 160","Mr. Harper","22","Prairie View Care Center · Wichita, KS","LPN","Tom Reed, LPN",72,"Medium",3],
+ ["Start cephalexin 500 mg QID x 7 days for cellulitis","Mrs. Nguyen","108","Sunflower Manor · Topeka, KS","RN","Grace Kim, RN",8,"High",2],
+ ["Order chest X-ray today; report results to Dr. T's team","Mr. Wallace","5","Flint Hills Health & Rehab · Emporia, KS","RN","Daniel Ortiz, RN",8,"High",1],
+ ["Fingerstick glucose before meals and at bedtime","Mrs. Bauer","231","Cottonwood Village · Salina, KS","LPN","Maria Lopez, LPN",24,"High",3],
+ ["Schedule podiatry consult within 2 weeks","Mr. Ellis","64","Smoky Hill Care Home · Hays, KS","Unit clerk","Priya Shah, Unit Clerk",336,"Routine",0],
+ ["Repeat INR on Thursday; hold warfarin if over 3.0","Mrs. Carter","17","Wheatland Gardens · Hutchinson, KS","RN","Hannah Brooks, RN",96,"High",2],
+ ["Begin OT evaluation for ADL independence","Mr. Fischer","142","Kaw River Manor · Lawrence, KS","PT","Alex Chen, PT",96,"Routine",1],
+ ["Daily weights; notify if gain over 3 lbs","Mrs. Ortega","9","Bluestem Pointe · Manhattan, KS","LPN","Jake Miller, LPN",168,"Routine",0],
+ ["Collect stool sample for C. diff today","Mr. Patterson","301","Arkansas Valley Care · Dodge City, KS","RN","Laura Hayes, RN",8,"High",3],
+ ["Wound photo and measurement every Monday","Mrs. Schmidt","76","Cimarron House · Garden City, KS","RN","Emily Ward, RN",120,"Medium",1],
+ ["Speech therapy swallow evaluation this week","Mr. Jensen","210","Walnut Creek Village · Overland Park, KS","PT","Megan Cole, SLP",120,"Medium",2],
+ ["Discontinue Foley catheter and monitor voiding","Mrs. Reyes","33","Neosho Park Care · Chanute, KS","RN","Sarah Miller, RN",24,"High",0]
+].map(([action,patient,room,facility,owner_role,suggested_owner,h,priority,stage])=>({action,patient,room,facility,owner_role,suggested_owner,due:dueDate(h),priority,stage}));
+const STAGE=[["Sent to facility","b-open","Accept"],["Accepted · Owner assigned","b-acc","Mark completed"],["Completed by facility","b-own","Close"],["Closed by Dr. T","b-done",""]];
+let state=[],newCount=0;
+function seed(){return SEED.map(t=>({...t}));}
 function render(){
   if(!state.length){$('tasks').innerHTML='';$('autobar').style.display='none';return;}
-  const acc=state.filter(t=>t.accepted).length;
+  const n=k=>state.filter(t=>t.stage===k).length;
   $('autobar').style.display='flex';
-  $('autostat').textContent=`${acc} of ${state.length} accepted`;
-  $('tasks').innerHTML=`<table class="dash"><thead><tr><th>Task</th><th>Patient</th><th>Facility</th><th>Due · Priority</th><th>Status</th><th>Owner</th><th></th></tr></thead><tbody>${state.map((t,i)=>`<tr>
-    <td><b>${t.action}</b></td>
+  $('autostat').textContent=`${state.length} tasks · ${n(0)} awaiting facility · ${n(1)} in progress · ${n(2)} completed · ${n(3)} closed`;
+  $('tasks').innerHTML=`<table class="dash"><thead><tr><th>Task</th><th>Patient</th><th>Facility</th><th>Due · Priority</th><th>Status</th><th>Owner</th><th></th></tr></thead><tbody>${state.map((t,i)=>{const s=STAGE[t.stage];return`<tr>
+    <td><b>${t.action}</b>${t.isNew?' <span class="badge b-acc" style="font-size:11px">New</span>':''}</td>
     <td>${t.patient} · Rm ${t.room}</td>
     <td>${t.facility}</td>
     <td>${t.due} · ${t.priority}</td>
-    <td>${t.accepted?'<span class="badge b-own">Accepted · Owner assigned</span>':'<span class="badge b-open">Sent to facility</span>'}</td>
-    <td>${t.accepted?t.suggested_owner:'<span class="hint">'+t.owner_role+' — assigned on accept</span>'}</td>
-    <td>${t.accepted?'<span class="hint">✓ '+t.acceptedAt+'</span>':`<button class="btn" data-i="${i}">Accept</button>`}</td>
-  </tr>`).join('')}</tbody></table>`;
-  document.querySelectorAll('#tasks .btn').forEach(b=>b.onclick=()=>{const t=state[+b.dataset.i];t.accepted=true;t.acceptedAt=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});render();});
+    <td><span class="badge ${s[1]}">${s[0]}</span></td>
+    <td>${t.stage?t.suggested_owner:'<span class="hint">'+t.owner_role+' — assigned on accept</span>'}</td>
+    <td>${s[2]?`<button class="btn" data-i="${i}">${s[2]}</button>`:'<span class="hint">✓ Closed</span>'}</td>
+  </tr>`}).join('')}</tbody></table>`;
+  document.querySelectorAll('#tasks .btn').forEach(b=>b.onclick=()=>{state[+b.dataset.i].stage++;render();});
 }
-function freshTask(t){return{...t,accepted:false};}
-$('go').onclick=(e)=>{
+$('go').onclick=()=>{
   const tasks=parse($('note').value);
-  if(!tasks.length){$('json').textContent='// No actionable instruction found. Try one of the examples.';state=[];render();$('speed').style.display='none';return;}
+  if(!tasks.length){$('json').textContent='// No actionable instruction found. Try one of the examples.';newCount=0;state=seed();render();$('speed').style.display='none';return;}
   $('json').textContent=JSON.stringify({model:"gpt-4o-mini",response_format:"json_schema: care_handoff_tasks",tasks:tasks.map(({due,...r})=>r)},null,2);
-  state=tasks.map(freshTask);render();speed();
+  newCount=tasks.length;state=[...tasks.map(t=>({...t,stage:0,isNew:true})),...seed()];render();speed();
 };
 function speed(){
-  if(!state.length)return;
-  const n=state.length,man=+$('man').value*n,ai=+$('ai').value*n;
+  if(!newCount)return;
+  const n=newCount,man=+$('man').value*n,ai=+$('ai').value*n;
   $('speed').style.display='block';
-  $('speed').innerHTML=`<b>${n} task${n>1?'s':''} created from one note.</b> Manual handling: ~${man} min · With CareConnection: ~${ai} min · <b>${man-ai} min saved on this note alone.</b>`;
+  $('speed').innerHTML=`<b>${n} task${n>1?'s':''} created from one note.</b> Manual handling: ~${fmt(man)} min · With CareConnection: ~${fmt(ai)} min · <b>${fmt(man-ai)} min saved on this note alone.</b>`;
 }
 $('go').click();
 
@@ -369,14 +355,12 @@ function calc(){
   const manMin=tasks*v.man+tasks*(v.miss/100)*v.rw;
   const aiMin=tasks*v.ai;
   const savedH=(manMin-aiMin)/60;
-  const cTask=(700*0.15+250*0.60)/1e6,cMo=cTask*tasks;
+  const cTask=10085/12/3750,cMo=cTask*tasks;
   $('m-tasks').textContent=fmt(tasks);$('m-hrs').textContent=fmt(savedH);$('m-fte').textContent=(savedH/160).toFixed(1);
   $('m-yr').textContent=fmt(savedH*12);$('m-man').textContent='~'+fmt(manMin/60);$('m-miss').textContent=fmt(tasks*v.miss/100);
-  $('bar-man').style.width='100%';$('bar-ai').style.width=Math.max(2,aiMin/Math.max(manMin,1)*100)+'%';
-  $('t-man').textContent='~'+fmt(manMin/60)+' h';$('t-ai').textContent='~'+fmt(aiMin/60)+' h';
   $('m-home').textContent=(savedH/v.homes).toFixed(1)+' h';$('m-pct').textContent=Math.round((1-aiMin/manMin)*100)+'%';$('m-pp').textContent=((manMin-aiMin)/v.pts).toFixed(1)+' min';
-  $('c-task').textContent='$'+cTask.toFixed(5);$('c-mo').textContent='$'+cMo.toFixed(2);$('c-yr').textContent='$'+(cMo*12).toFixed(2);
-  $('h-homes').textContent=v.homes;$('h-pts').textContent=fmt(v.pts);$('h-hrs').textContent=fmt(savedH);$('h-cost').textContent='$'+cMo.toFixed(2);
+  $('c-task').textContent='$'+cTask.toFixed(2);$('c-mo').textContent='$'+fmt(cMo);$('c-yr').textContent='$'+fmt(cMo*12);
+  $('h-homes').textContent=v.homes;$('h-pts').textContent=fmt(v.pts);$('h-hrs').textContent=fmt(savedH);$('h-cost').textContent='$'+fmt(cMo);
   speed();
 }
 IN.forEach(k=>$(k).addEventListener('input',calc));calc();
